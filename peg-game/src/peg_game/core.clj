@@ -2,7 +2,7 @@
   (:gen-class)
   (:require [clojure.set :as set]))
 
-(declare successful-move prompt-move game-over query-rows)
+(declare successful-move prompt-move game-over prompt-rows)
 
 ;;
 ;; Creating the Board
@@ -277,3 +277,27 @@
         (do
           (println "Bye!")
           (System/exit 0))))))
+
+
+(defn prompt-empty-peg
+  "Prompt the user to select which position will be empty at the beginning of
+  the game"
+  [board]
+  (println "Here's your board:")
+  (print-board board)
+  (println "Remove which peg? (default: e):")
+  (prompt-move (remove-peg board (letter->pos (get-input "e")))))
+
+(defn prompt-rows
+  "Prompt the user to specify how many rows he/she would like for their board"
+  []
+  (println "How many rows? (default: 5):")
+  (let [rows (Integer. (get-input 5))
+        board (new-board rows)]
+    (prompt-empty-peg board)))
+
+
+(defn -main
+  [& args]
+  (println "Get ready to play the PEG GAME!")
+  (prompt-rows))
