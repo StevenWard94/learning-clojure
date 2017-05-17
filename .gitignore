@@ -19,5 +19,7 @@ pom.xml.asc
 *.jar
 *.class
 
-# ignore nrepl files from leiningen
+# ignore nrepl files from leiningen or boot
 **/.nrepl-port
+**/.nrepl-history
+**/.lein-repl-history
