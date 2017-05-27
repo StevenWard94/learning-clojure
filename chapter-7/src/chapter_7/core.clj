@@ -34,3 +34,30 @@
 (defn exclaim
   [exclamation]
   (str exclamation "!"))
+
+
+(defmacro ignore-last-operand
+  [function-call]
+  (butlast function-call))
+
+
+(defmacro infix
+  [infixed]
+  (list (second infixed)
+        (first infixed)
+        (last infixed)))
+
+
+(defn read-resource'
+  "Read a resource into a string"
+  [path]
+  (read-string (slurp (clojure.java.io/resource path))))
+
+
+(defn read-resource
+  "Read a resource into a string - using the '->' macro"
+  [path]
+  (-> path
+      clojure.java.io/resource
+      slurp
+      read-string))
