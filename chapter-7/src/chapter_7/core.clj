@@ -1,4 +1,5 @@
 (ns chapter-7.core
+  (:require [chapter-7.exercises :as ex])
   (:gen-class))
 
 (defmacro backwards
