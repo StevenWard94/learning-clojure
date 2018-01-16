@@ -138,3 +138,90 @@
 ;              ["Sweet gorilla of Manila, this is good code:" good]])))
 ;
 ; => NullPointerException
+
+; The problem here is that 'map' returns a list and, so, the definition of
+; 'code-critic' is, basically, evaluated like so:
+;     => (code-critic (1 + 1) (+ 1 1))
+;     ~> (do
+;         ((clojure.core/println "criticism" '(1 + 1))
+;          (clojure.core/println "criticism" '(+ 1 1))))
+;
+;     ~> (do
+;         (nil
+;          (clojure.core/println "criticism" '(+ 1 1))))
+;
+;     ~> (do
+;         (nil nil))
+;
+; So, the form is, in the end, evaluated like (nil nil) and you can't call 'nil'
+
+; Unquote splicing, performed with '~@', was designed to handle this exact situation
+; Merely unquoting a list results in this:
+;   => `(+ ~(list 1 2 3))
+;   =>      (clojure.core/+ (1 2 3))
+;
+; With "unquote splicing", however, we get this:
+;   => `(+ ~@(list 1 2 3))
+;   =>      (clojure.core/+ 1 2 3)
+
+; Finally, here is 'code-critic' after adding "unquote splicing"
+(defmacro code-critic
+  [good bad]
+  `(do ~@(map #(apply criticize-code %)
+              [["Sweet lion of Zion, this is bad code:" bad]
+               ["Great cow of Moscow, this is good code:" good]])))
+
+
+; "Varial capture" occurs when a macro, unbeknownst to the user calling the
+; macro, overrides an existing binding that the user has defined. In this
+; example, the macro introduces a 'let' binding that interferes with the user's
+; code:
+(def message "Good job!")
+(defmacro with-mischief
+  [& stuff-to-do]
+  (concat (list 'let ['message "Oh, big deal!"])
+          stuff-to-do))
+; chapter-8.core=> (with-mischief
+;                    (println "Here's how I feel about that thing you did: " message))
+;               => Here's how I feel about that thing you did: Oh, big deal!
+
+; Using syntax quoting (as shown below) would result in an exception:
+;
+; (defmacro with-mischief
+;   [& stuff-to-do]
+;   `(let [message "Oh, big deal!"]
+;      ~@stuff-to-do))
+;
+; chapter-8.core=> (with-mischief
+;                    (println "Here's how I feel about that thing you did: " message))
+;               => java.lang.RuntimeException: Can't let qualified name: chapter-8.core/message
+;
+; The resulting exception is intentional and to the benefit of the user. Syntax
+; quoting is designed to prevent the accidental capture of variables within
+; macros.
+; If you want to introduce 'let' bindings in your macro, you can use a "gensym".
+; The 'gensym' function produces unique symbols on each call:
+;   => (gensym)
+;   => G__14971
+;   => (gensym)
+;   => G__14974
+;
+; The symbol generated can also be given a user-defined prefix:
+;   => (gensym 'message)
+;   => message14977
+;   => (gensym 'message)
+;   => message14980
+
+; Here's how 'with-mischief' could be rewritten with less mischief:
+(defmacro without-mischief
+  [& stuff-to-do]
+  (let [macro-message (gensym 'message)]
+    `(let [~macro-message "Oh, big deal!"]
+       ~@stuff-to-do
+       (println "I still need to say: " ~macro-message))))
+
+; chapter-8.core=> (without mischief
+;                    (println "Here's how I feel about that thing you did: " macro-message))
+;
+;               => Here's how I feel about that thing you did: Good job!
+;               => I still need to say: Oh, big deal!
